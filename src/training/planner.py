@@ -155,3 +155,95 @@ def build_training_plan(
             current_1rm = new_1rm
 
     return training_plan
+
+
+def suggest_next_week_workout(
+    current_week: int,
+    lift_name: str,
+    training_plan: Dict[int, Dict[str, float]]
+) -> Dict[str, any]:
+    """
+    Generate specific workout prescription for the upcoming week.
+
+    Takes a training plan and generates detailed workout instructions for a specific
+    week and lift, including sets, reps, weight, and special instructions for AMRAP weeks.
+
+    Args:
+        current_week: Week number to generate prescription for (1-13)
+        lift_name: Which lift ("Squat", "Bench Press", "Pull-ups")
+        training_plan: Output from build_training_plan() containing weekly prescriptions
+
+    Returns:
+        Dictionary with workout prescription:
+        {
+            'week': int,                    # Week number
+            'lift': str,                    # Lift name
+            'sets': int,                    # Number of sets (3, 4, or 5)
+            'target_reps': str,             # Target rep range (e.g., "9-12", "10-15")
+            'weight': float,                # Prescribed weight
+            'is_amrap_week': bool,          # Whether to perform AMRAP
+            'instructions': str             # Workout instructions including AMRAP notes
+        }
+
+    Raises:
+        ValueError: If current_week is not in range 1-13 or not in training_plan
+        ValueError: If lift_name is not recognized
+
+    Example:
+        >>> plan = build_training_plan(start_1rm=300.0)
+        >>> workout = suggest_next_week_workout(2, "Squat", plan)
+        >>> print(workout['instructions'])
+        Week 2 - Squat Workout
+        Sets: 3 sets
+        Reps: 9-12 reps per set
+        Weight: 225.0 lbs
+        SPECIAL: Perform AMRAP (as many reps as possible) on the final set
+
+    Notes:
+        - Rep ranges: 9-12 for Squat/Bench Press, 10-15 for Pull-ups
+        - Sets progression: 3 (Block 1) → 4 (Block 2) → 5 (Block 3)
+        - AMRAP instructions included for weeks 2-4, 6-8, 10-12
+    """
+    # Validate week
+    if not 1 <= current_week <= 13:
+        raise ValueError("current_week must be between 1 and 13")
+
+    if current_week not in training_plan:
+        raise ValueError(f"Week {current_week} not found in training_plan")
+
+    # Validate lift name
+    valid_lifts = ["Squat", "Bench Press", "Pull-ups"]
+    if lift_name not in valid_lifts:
+        raise ValueError(f"lift_name must be one of: {', '.join(valid_lifts)}")
+
+    # Get week prescription from training plan
+    week_data = training_plan[current_week]
+    prescribed_weight = week_data['prescribed_weight']
+    sets = week_data['sets']
+    is_amrap_week = week_data['is_amrap_week']
+
+    # Determine target rep range based on lift type
+    if lift_name == "Pull-ups":
+        target_reps = "10-15"
+    else:  # Squat or Bench Press
+        target_reps = "9-12"
+
+    # Build instructions
+    instructions = f"Week {current_week} - {lift_name} Workout\n"
+    instructions += f"Sets: {sets} sets\n"
+    instructions += f"Reps: {target_reps} reps per set\n"
+    instructions += f"Weight: {prescribed_weight:.1f} lbs\n"
+
+    if is_amrap_week:
+        instructions += f"\nSPECIAL: Perform AMRAP (as many reps as possible) on the final set"
+
+    # Return workout prescription
+    return {
+        'week': current_week,
+        'lift': lift_name,
+        'sets': sets,
+        'target_reps': target_reps,
+        'weight': prescribed_weight,
+        'is_amrap_week': is_amrap_week,
+        'instructions': instructions
+    }
